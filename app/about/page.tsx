@@ -47,7 +47,7 @@ export default function AboutPage() {
           }}
         >
           <Link href="/" style={{ fontWeight: 800, fontSize: 20, color: "#176344" }}>
-            Favour Int&apos;l School
+            Favour Int&apos;l School, Masaka
           </Link>
           <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
             <Link href="/">Home</Link>
@@ -88,7 +88,7 @@ export default function AboutPage() {
               letterSpacing: "-.04em",
             }}
           >
-            About Favour Int&apos;l School
+            About Favour Int&apos;l School, Masaka
           </h1>
           <p style={{ maxWidth: 720, margin: 0, color: "#e3f2e9", fontSize: 18, lineHeight: 1.8 }}>
             A welcoming place to learn, grow in confidence and build strong character.
@@ -107,7 +107,7 @@ export default function AboutPage() {
             </p>
             <h2 style={{ margin: "0 0 14px", fontSize: 28 }}>A place to discover potential</h2>
             <p style={{ margin: 0, color: "#52665c", lineHeight: 1.8 }}>
-              Favour Int&apos;l School is presented here as a learning community focused on helping
+              Favour Int&apos;l School, Masaka is presented here as a learning community focused on helping
               children build knowledge, confidence and good character. We want every learner to
               feel encouraged to ask questions, explore ideas and keep improving.
             </p>
@@ -188,7 +188,7 @@ export default function AboutPage() {
           <div>
             <h2 style={{ margin: "0 0 8px", fontSize: 26 }}>Be part of our school community</h2>
             <p style={{ margin: 0, color: "#d6e9de", lineHeight: 1.7 }}>
-              Contact the school to learn more about admissions and the learning experience.
+              Visit us at Riverside, Masaka, to learn more about admissions and the learning experience.
             </p>
           </div>
           <Link
@@ -208,7 +208,8 @@ export default function AboutPage() {
 
         <footer style={{ paddingTop: 28, color: "#66786e", fontSize: 13 }}>
           <p style={{ margin: 0 }}>
-            © {new Date().getFullYear()} Favour Int&apos;l School · Demonstration website content
+            Riverside, Masaka
+          © {new Date().getFullYear()} Favour Int&apos;l School, Masaka · Demonstration website content
           </p>
         </footer>
       </div>
