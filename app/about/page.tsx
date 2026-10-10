@@ -83,9 +83,10 @@ export default function AboutPage() {
             style={{
               maxWidth: 760,
               margin: "0 0 20px",
-              fontSize: "clamp(38px, 6vw, 64px)",
-              lineHeight: 1.05,
-              letterSpacing: "-.04em",
+              fontSize: "clamp(34px, 5.4vw, 58px)",
+              lineHeight: 1.12,
+              letterSpacing: "-.035em",
+              whiteSpace: "nowrap",
             }}
           >
             About Favour Int&apos;l School, Masaka
