@@ -1,65 +1,91 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { createOrReuseDevice, setSession, verifyPassword } from "@/lib/auth";
+import { createOrReuseDevice, setSession, verifyPin } from "@/lib/auth";
 
 export async function POST(request: Request) {
-  const b = await request.json().catch(() => null);
-  const email = String(b?.email ?? "").trim().toLowerCase();
-  const password = String(b?.password ?? "").trim();
-
-  if (!email || !password) {
-    return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "PIN-only login is available only in local development. Production authentication must be configured first." },
+      { status: 403 }
+    );
   }
 
-  const user = await db.user.findUnique({ where: { email } });
-  const ownerEmail = process.env.SKULGO_OWNER_EMAIL?.trim().toLowerCase();
-  if (ownerEmail && email === ownerEmail) {
-    return NextResponse.json({ error: "Use the SkulGo Owner login at /owner/login." }, { status: 403 });
+  const body = await request.json().catch(() => null);
+  const pin = String(body?.pin ?? "").trim();
+
+  if (!/^[0-9]{4,6}$/.test(pin)) {
+    return NextResponse.json(
+      { error: "Enter a valid 4–6 digit PIN." },
+      { status: 400 }
+    );
   }
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
-    return NextResponse.json({ error: "Invalid login details" }, { status: 401 });
-  }
-
-  if (!user.emailVerifiedAt) {
-    return NextResponse.json({
-      error: "Please verify your email before signing in.",
-      emailVerificationRequired: true,
-      email: user.email,
-    }, { status: 403 });
-  }
-
-  const memberships = await db.schoolMembership.findMany({
-    where: { userId: user.id, active: true },
-    include: { school: { select: { id: true, name: true, abbr: true } } },
-    orderBy: { createdAt: "asc" },
+  const users = await db.user.findMany({
+    where: { pinHash: { not: null } },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      pinHash: true,
+      memberships: {
+        where: { active: true },
+        select: {
+          id: true,
+          schoolId: true,
+          role: true,
+        },
+      },
+    },
   });
 
+  const matches = users.filter(
+    (user) => user.pinHash && verifyPin(pin, user.pinHash)
+  );
+
+  if (matches.length !== 1) {
+    return NextResponse.json(
+      {
+        error: matches.length > 1
+          ? "This PIN matches more than one account. Assign a unique PIN to each account."
+          : "Incorrect PIN.",
+      },
+      { status: 401 }
+    );
+  }
+
+  const user = matches[0];
+  if (user.memberships.length !== 1) {
+    return NextResponse.json(
+      { error: "This account must have exactly one active school membership." },
+      { status: 403 }
+    );
+  }
+
+  const membership = user.memberships[0];
   const response = NextResponse.json({
     ok: true,
     name: user.name,
-    pinConfigured: Boolean(user.pinHash),
-    workspaces: memberships.map(m => ({
-      membershipId: m.id,
-      schoolId: m.schoolId,
-      schoolName: m.school.name,
-      schoolAbbr: m.school.abbr,
-      role: m.role,
-    })),
+    role: membership.role,
   });
 
   let deviceId = await createOrReuseDevice(user.id, response);
   const recoveryEmail = process.env.SKULGO_DEVICE_RECOVERY_EMAIL?.trim().toLowerCase();
-  if (!deviceId && recoveryEmail && email === recoveryEmail) {
+
+  if (!deviceId && recoveryEmail && user.email.toLowerCase() === recoveryEmail) {
     await db.deviceSession.updateMany({
       where: { userId: user.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
     deviceId = await createOrReuseDevice(user.id, response);
   }
+
   if (!deviceId) {
-    return NextResponse.json({ error: "Maximum of 2 active devices reached." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Maximum of 2 active devices reached." },
+      { status: 429 }
+    );
   }
-  setSession(response, { id: user.id }, null, deviceId);
+
+  setSession(response, { id: user.id }, membership.id, deviceId);
   return response;
 }
