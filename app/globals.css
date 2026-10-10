@@ -3,3 +3,96 @@
 .workspace{min-height:100vh;display:grid;grid-template-columns:220px 1fr;background:#f7f8fa}.workspace-sidebar{border-right:1px solid #e5e7eb;background:#fff;padding:18px;display:flex;flex-direction:column;gap:18px}.workspace-brand{font-size:22px;font-weight:700;letter-spacing:-.04em}.workspace-school{display:grid;gap:4px;padding:12px;border:1px solid #e5e7eb;border-radius:10px}.workspace-school span,.workspace-person span{color:#667085;font-size:13px}.workspace-nav{display:grid;gap:4px}.workspace-nav a{padding:9px 10px;border-radius:8px}.workspace-nav a:hover{background:#f2f4f7}.workspace-nav:has(details[open])>details:not([open]){display:none}.workspace-nav details>div{display:grid;gap:4px}.workspace-nav details summary{list-style:none}.workspace-nav details summary::-webkit-details-marker{display:none}.workspace-person{margin-top:auto;display:grid;gap:4px;padding-top:14px;border-top:1px solid #e5e7eb}.workspace-person a{font-size:13px;margin-top:5px}.workspace-main{padding:28px;max-width:1100px;width:100%}.workspace-header{margin-bottom:22px}.workspace-header h1{margin:4px 0 0;font-size:clamp(28px,4vw,42px);letter-spacing:-.04em}@media(max-width:760px){.workspace{grid-template-columns:1fr}.workspace-sidebar{border-right:0;border-bottom:1px solid #e5e7eb}.workspace-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-main{padding:18px}}
 
 .report-card-shell{width:100%;max-width:1100px;margin:0 auto}.report-card-actions{display:flex;justify-content:flex-end;margin-bottom:14px}.report-card{background:#fff;border:1px solid #dfe7e2;border-radius:14px;padding:28px;box-shadow:0 8px 28px rgba(18,35,29,.06);color:#12231d}.report-card-header{display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #0B6B4A;padding-bottom:18px}.report-card-school{font-size:28px;font-weight:800;color:#0B6B4A}.report-card-subtitle{font-size:14px;color:#66736d;margin-top:3px}.report-card-contact{font-size:12px;color:#66736d;margin-top:8px}.report-card-title{text-align:right;display:grid;align-content:center;gap:5px}.report-card-title strong{text-transform:uppercase;font-size:22px}.report-card-title span{font-size:14px;color:#66736d}.report-card-section{margin-top:18px;border:1px solid #d7e2dc;border-radius:10px;overflow:hidden}.report-card-section-title{background:#f0f6f2;color:#0B6B4A;font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.04em;padding:10px 13px;border-bottom:1px solid #d7e2dc}.report-card-info{display:grid;grid-template-columns:repeat(4,1fr)}.report-card-info>div{padding:12px;border-right:1px solid #e2ebe6;display:grid;gap:4px}.report-card-info>div:last-child{border-right:0}.report-card-info span,.report-card-summary span{font-size:11px;color:#66736d;text-transform:uppercase}.report-card-info strong{font-size:14px}.report-card-table{width:100%;border-collapse:collapse;font-size:13px}.report-card-table th{background:#0B6B4A;color:#fff;text-align:left;padding:10px 9px;font-size:11px;text-transform:uppercase}.report-card-table td{padding:9px;border-bottom:1px solid #e4ebe7}.report-card-table tbody tr:nth-child(even){background:#fafcfb}.report-card-danger-cell{background:#fff0ed!important;color:#c9342f!important;font-weight:800}.report-card-danger-text{color:#c9342f!important;font-weight:800}.report-card-summary-grid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px;margin-top:18px}.report-card-summary{border:1px solid #d7e2dc;border-radius:10px;overflow:hidden}.report-card-summary>div:not(.report-card-section-title){display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #e4ebe7;font-size:13px}.report-card-summary>div:last-child{border-bottom:0}.report-card-summary strong{font-size:13px}.report-card-grading strong{min-width:20px;text-align:center}.report-card-remark{display:grid;grid-template-columns:170px 1fr;border-bottom:1px solid #e4ebe7}.report-card-remark:last-child{border-bottom:0}.report-card-remark strong,.report-card-remark span{padding:11px 13px;font-size:13px}.report-card-remark strong{background:#fafcfb}.report-card-footer{display:grid;grid-template-columns:1fr 1fr 1fr;gap:30px;margin-top:28px;padding-top:18px;border-top:1px solid #d7e2dc;font-size:12px;color:#46554e}.no-print{display:block}@media(max-width:800px){.report-card{padding:16px}.report-card-header{display:grid}.report-card-title{text-align:left}.report-card-info{grid-template-columns:repeat(2,1fr)}.report-card-summary-grid{grid-template-columns:1fr}.report-card-table{font-size:11px;display:block;overflow-x:auto}.report-card-footer{grid-template-columns:1fr}}@media print{body{background:#fff}.no-print{display:none!important}.report-card-shell{max-width:none}.report-card{border:0;box-shadow:none;border-radius:0;padding:0}.workspace-sidebar{display:none!important}.workspace-main{max-width:none;padding:0}.report-card-table{font-size:11px}}
+
+/* Favour Int'l School workspace visual theme — presentation only */
+.workspace {
+  background: #f5faf7;
+  color: #18352b;
+}
+.workspace-sidebar {
+  border-right-color: #dce9e0;
+  background: #ffffff;
+}
+.workspace-brand {
+  color: #176344;
+}
+.workspace-school {
+  border-color: #dce9e0;
+  background: #f8fcf9;
+}
+.workspace-nav > a:first-child {
+  background: #eaf4ee;
+  color: #176344;
+  font-weight: 700;
+}
+.workspace-nav a,
+.workspace-nav details summary {
+  border-radius: 9px;
+  transition: background-color .15s ease, color .15s ease;
+}
+.workspace-nav a:hover,
+.workspace-nav details summary:hover {
+  background: #edf7f0;
+  color: #176344;
+}
+.workspace-nav details > div a {
+  display: block;
+  padding: 8px 10px;
+  color: #465b50;
+}
+.workspace-person {
+  border-top-color: #dce9e0;
+}
+.workspace-person strong {
+  color: #18352b;
+}
+.workspace-main {
+  max-width: 1240px;
+}
+.workspace-header {
+  margin-bottom: 26px;
+}
+.workspace-header .muted {
+  color: #668074;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.workspace-header h1 {
+  color: #18352b;
+}
+.workspace-main .card {
+  border-color: #e0eae3;
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(18, 63, 48, .045);
+}
+.workspace-main .card > .muted:first-child {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #66786e;
+  font-size: 13px;
+  font-weight: 600;
+}
+.workspace-main .stat {
+  color: #176344;
+  font-size: 32px;
+  letter-spacing: -.035em;
+}
+.workspace-main .button {
+  background: #176344;
+  border-radius: 9px;
+  font-weight: 700;
+}
+.workspace-main .button:hover {
+  background: #123f30;
+}
+@media (max-width: 760px) {
+  .workspace-sidebar {
+    gap: 14px;
+  }
+  .workspace-main {
+    padding: 18px;
+  }
+}
+
