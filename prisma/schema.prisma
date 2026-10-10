@@ -352,6 +352,10 @@ model Teacher {
   user User @relation(fields:[userId],references:[id],onDelete:Cascade)
   teacherCode String @unique
   approved Boolean @default(false)
+  active Boolean @default(true)
+  pinHash String?
+  pinFailedAttempts Int @default(0)
+  pinLockedUntil DateTime?
   assignments TeacherAssignment[]
   classTeacherAssignments ClassTeacher[]
   attendanceSessions AttendanceSession[]
@@ -380,6 +384,10 @@ model Student {
   guardianPhone String?
   classId String?
   class SchoolClass? @relation(fields:[classId],references:[id],onDelete:SetNull)
+  active Boolean @default(true)
+  pinHash String?
+  pinFailedAttempts Int @default(0)
+  pinLockedUntil DateTime?
   parentLinks ParentStudent[]
   attendance Attendance[]
   assessments Assessment[]
@@ -402,6 +410,10 @@ model ParentStudent {
   studentId String
   student Student @relation(fields:[studentId],references:[id],onDelete:Cascade)
   approved Boolean @default(false)
+  active Boolean @default(true)
+  pinHash String?
+  pinFailedAttempts Int @default(0)
+  pinLockedUntil DateTime?
   relationship String?
   @@unique([parentId,studentId])
 }
