@@ -376,7 +376,7 @@ export default async function Dashboard() {
   return (
     <main className="workspace">
       <aside className="workspace-sidebar">
-        <div className="workspace-brand">Favour Int'l School</div>
+        <div className="workspace-brand">Favour Int&apos;l School, Masaka</div>
 
         <nav className="workspace-nav">
           <a href="/dashboard">Dashboard</a>
