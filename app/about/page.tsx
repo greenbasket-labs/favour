@@ -207,9 +207,9 @@ export default function AboutPage() {
         </section>
 
         <footer style={{ paddingTop: 28, color: "#66786e", fontSize: 13 }}>
+          <p style={{ margin: "0 0 6px" }}>School address: Riverside, Masaka</p>
           <p style={{ margin: 0 }}>
-            Riverside, Masaka
-          © {new Date().getFullYear()} Favour Int&apos;l School, Masaka · Demonstration website content
+            © {new Date().getFullYear()} Favour Int&apos;l School, Masaka · Demonstration website content
           </p>
         </footer>
       </div>
