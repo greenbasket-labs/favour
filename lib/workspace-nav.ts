@@ -18,7 +18,7 @@ export function navForRole(role: WorkspaceRole): WorkspaceNavGroup[] {
             ["Sections", "/sections"],
             ["Classes", "/classes"],
             ["Subjects", "/subjects"],
-            ["Assign", "/assign"],
+            ["Assignments", "/assign"],
           ],
         },
         {
