@@ -376,11 +376,8 @@ export default async function Dashboard() {
   return (
     <main className="workspace">
       <aside className="workspace-sidebar">
-        <div className="workspace-brand">SkulGo</div>
-        <div className="workspace-school">
-          <strong>{u.membership.school.name}</strong>
-          <span>{u.membership.school.abbr}</span>
-        </div>
+        <div className="workspace-brand">Favour Int'l School</div>
+
         <nav className="workspace-nav">
           <a href="/dashboard">Dashboard</a>
           {nav.map(group => (
@@ -396,11 +393,7 @@ export default async function Dashboard() {
             </details>
           ))}
         </nav>
-        <div className="workspace-nav" style={{ marginTop: 18 }}>
-          <p className="muted" style={{ margin: "0 0 8px" }}>Personal account</p>
-          <Link href="/register">Register a school</Link>
-          <Link href="/account">My profile</Link>
-        </div>
+
         <div className="workspace-person">
           <strong>{u.name}</strong>
           <span>{role}</span>
@@ -410,7 +403,7 @@ export default async function Dashboard() {
       <section className="workspace-main">
         <div className="workspace-header">
           <div>
-            <p className="muted">{workspaceLabel} · {u.membership.school.name}</p>
+            <p className="muted">{workspaceLabel}</p>
             <h1>{getGreeting()}, {u.name.split(" ")[0]}</h1>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { db } from "@/lib/db";
 import ResultCheckerCallback from "./callback";
 
+export const dynamic = "force-dynamic";
+
 export default async function CallbackPage() {
   const setting = await db.platformSetting.findUnique({ where: { key: "resultCheckerEnabled" } });
   if (setting?.value !== "true") notFound();

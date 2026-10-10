@@ -42,14 +42,6 @@ export function navForRole(role: WorkspaceRole): WorkspaceNavGroup[] {
             ["Support", "/support"],
           ],
         },
-        {
-          label: "Account",
-          items: [
-            ["Plan", "/plan"],
-            ["Admin Handover", "/admin/handover"],
-            ["My Account", "/account"],
-          ],
-        },
       ];
     case "TEACHER":
       return [

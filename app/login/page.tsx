@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import WorkspaceUnlock from "@/components/workspace-unlock";
-import HowSkulGoWorks from "@/components/how-skulgo-works";
 
 type Workspace = {
   membershipId: string;
@@ -18,10 +17,9 @@ export default function Login() {
   const [message, setMessage] = useState("");
   const [verificationEmail, setVerificationEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
+  const [selectedWorkspace, setSelectedWorkspace] =
+    useState<Workspace | null>(null);
   const [pinConfigured, setPinConfigured] = useState(true);
-  const [showHowItWorks, setShowHowItWorks] = useState(false);
   const router = useRouter();
 
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -29,90 +27,139 @@ export default function Login() {
     setBusy(true);
     setMessage("");
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(formData)),
-    });
+    try {
+      const formData = new FormData(e.currentTarget);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(formData)),
+      });
 
-    const data = await response.json().catch(() => ({}));
-    setBusy(false);
+      const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      if (data.emailVerificationRequired && data.email) {
-        setVerificationEmail(data.email);
+      if (!response.ok) {
+        if (data.emailVerificationRequired && data.email) {
+          setVerificationEmail(data.email);
+        }
+        setMessage(data.error || "Sign-in failed.");
+        return;
       }
-      setMessage(data.error || "Login failed");
-      return;
-    }
 
-    setVerificationEmail("");
-    const available = Array.isArray(data.workspaces) ? data.workspaces : [];
-    setWorkspaces(available);
-    setPinConfigured(Boolean(data.pinConfigured));
+      setVerificationEmail("");
 
-    if (available.length === 1) {
+      const available: Workspace[] = Array.isArray(data.workspaces)
+        ? data.workspaces
+        : [];
+
+      if (available.length === 0) {
+        setMessage(
+          "This account is not connected to Favour Int'l School. Please contact the school administrator."
+        );
+        return;
+      }
+
+      if (available.length !== 1) {
+        setMessage(
+          "This account has multiple active school workspaces. Please contact the administrator to resolve the account setup."
+        );
+        return;
+      }
+
+      setPinConfigured(Boolean(data.pinConfigured));
       setSelectedWorkspace(available[0]);
-      return;
+    } catch {
+      setMessage("Unable to connect. Please check your connection and try again.");
+    } finally {
+      setBusy(false);
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   async function resendVerification() {
     if (!verificationEmail) return;
+
     setBusy(true);
     setMessage("");
 
-    const response = await fetch("/api/auth/resend-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: verificationEmail }),
-    });
-    const data = await response.json().catch(() => ({}));
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verificationEmail }),
+      });
 
-    setBusy(false);
-    if (!response.ok) {
-      setMessage(data.error || "Could not send verification email.");
-      return;
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(data.error || "Could not send the verification email.");
+        return;
+      }
+
+      router.push(
+        "/verify-email?pending=1&email=" +
+          encodeURIComponent(verificationEmail)
+      );
+      router.refresh();
+    } catch {
+      setMessage("Unable to send the verification email. Please try again.");
+    } finally {
+      setBusy(false);
     }
-
-    router.push("/verify-email?pending=1&email=" + encodeURIComponent(verificationEmail));
-    router.refresh();
   }
 
   if (selectedWorkspace) {
     return (
       <main className="shell">
-        <div className="card" style={{ maxWidth: 520, margin: "40px auto" }}>
-          {!pinConfigured ? (
-            <div className="grid">
-              <p className="muted">SkulGo</p>
-              <h1>Workspace PIN required</h1>
-              <p className="muted">Set your 4-6 digit PIN in My Account before entering a school workspace.</p>
-              <Link className="button" href="/account">Set workspace PIN →</Link>
-            </div>
-          ) : (
-            <WorkspaceUnlock
-              schoolName={selectedWorkspace.schoolName}
-              onCancel={() => setSelectedWorkspace(null)}
-              onUnlock={async pin => {
-                const response = await fetch("/api/workspaces/select", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ membershipId: selectedWorkspace.membershipId, pin }),
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) return { ok: false, error: data.error };
-                router.push("/dashboard");
-                router.refresh();
-                return { ok: true };
-              }}
-            />
-          )}
+        <div className="card" style={{ maxWidth: 440, margin: "56px auto" }}>
+          <div className="grid">
+            <p className="muted">FAVOUR INT'L SCHOOL</p>
+            <h1>Secure access</h1>
+            {!pinConfigured ? (
+              <>
+                <p className="muted">
+                  Set up your 4–6 digit PIN before entering your school workspace.
+                </p>
+                <Link className="button" href="/account">
+                  Set up PIN
+                </Link>
+              </>
+            ) : (
+              <WorkspaceUnlock
+                schoolName="Favour Int'l School"
+                onCancel={() => setSelectedWorkspace(null)}
+                onUnlock={async pin => {
+                  try {
+                    const response = await fetch("/api/workspaces/select", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        membershipId: selectedWorkspace.membershipId,
+                        pin,
+                      }),
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                      return {
+                        ok: false,
+                        error: data.error || "Could not unlock your account.",
+                        setupRequired: data.setupRequired,
+                      };
+                    }
+
+                    router.push("/dashboard");
+                    router.refresh();
+                    return { ok: true };
+                  } catch {
+                    return {
+                      ok: false,
+                      error: "Unable to connect. Please try again.",
+                    };
+                  }
+                }}
+              />
+            )}
+          </div>
         </div>
       </main>
     );
@@ -120,65 +167,94 @@ export default function Login() {
 
   return (
     <main className="shell">
-      <div className="card" style={{ maxWidth: 520, margin: "40px auto" }}>
-        <p className="muted">SkulGo</p>
-        <h1>Sign in</h1>
-        <p className="muted">
-          Use your SkulGo account to continue to your available school workspaces.
-        </p>
+      <div
+        className="card"
+        style={{ maxWidth: 440, margin: "56px auto", padding: 28 }}
+      >
+        <div className="grid" style={{ gap: 8 }}>
+          <p
+            className="muted"
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+            }}
+          >
+            FAVOUR INT'L SCHOOL
+          </p>
 
-        <button
-          type="button"
-          className="button"
-          style={{ marginBottom: 16 }}
-          onClick={() => setShowHowItWorks(value => !value)}
-          aria-expanded={showHowItWorks}
-        >
-          How does SkulGo work? {showHowItWorks ? "⌃" : "⌄"}
-        </button>
+          <h1 style={{ marginBottom: 0 }}>Sign in</h1>
 
-        {showHowItWorks ? (
-          <HowSkulGoWorks onBack={() => setShowHowItWorks(false)} backLabel="Back to sign up" />
-        ) : (
-          <>
-            <form onSubmit={submit} className="grid">
-              <label className="grid">
-                <span>Email</span>
-                <input required type="email" name="email" placeholder="Email" />
-              </label>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Enter your email and password to access your school workspace.
+          </p>
+        </div>
 
-              <label className="grid">
-                <span>Password</span>
-                <input required type="password" name="password" placeholder="Password" />
-              </label>
+        <form onSubmit={submit} className="grid" style={{ marginTop: 24 }}>
+          <label className="grid" style={{ gap: 6 }}>
+            <span>Email address</span>
+            <input
+              required
+              type="email"
+              name="email"
+              placeholder="Enter your email"
+              autoComplete="username"
+            />
+          </label>
 
-              <button className="button" disabled={busy}>
-                {busy ? "Signing in…" : "Sign in"}
-              </button>
-            </form>
+          <label className="grid" style={{ gap: 6 }}>
+            <span>Password</span>
+            <input
+              required
+              type="password"
+              name="password"
+              placeholder="Enter your password"
+              autoComplete="current-password"
+            />
+          </label>
 
-            {message && <p>{message}</p>}
+          <div style={{ textAlign: "right" }}>
+            <Link href="/forgot-password">Forgot password?</Link>
+          </div>
 
-            {verificationEmail && (
-              <div className="grid" style={{ marginTop: 12 }}>
-                <p className="muted">Your email is not verified yet.</p>
-                <button className="button" type="button" onClick={resendVerification} disabled={busy}>
-                  {busy ? "Sending…" : "Send verification OTP"}
-                </button>
-              </div>
-            )}
+          <button className="button" disabled={busy}>
+            {busy ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
 
-            <p className="muted" style={{ marginTop: 16 }}>
-              <Link href="/forgot-password">Forgot password?</Link>
-            </p>
-
-            <div style={{ marginTop: 20 }} className="grid">
-              <p className="muted">
-                Need a personal account? <Link href="/signup">Create one</Link>
-              </p>
-            </div>
-          </>
+        {message && (
+          <p role="alert" style={{ marginTop: 16 }}>
+            {message}
+          </p>
         )}
+
+        {verificationEmail && (
+          <div className="grid" style={{ marginTop: 16 }}>
+            <p className="muted">
+              Your email needs to be verified before you can sign in.
+            </p>
+            <button
+              className="button"
+              type="button"
+              onClick={resendVerification}
+              disabled={busy}
+            >
+              {busy ? "Please wait..." : "Resend verification email"}
+            </button>
+          </div>
+        )}
+
+        <div
+          style={{
+            borderTop: "1px solid var(--border, #e5e7eb)",
+            marginTop: 24,
+            paddingTop: 16,
+          }}
+        >
+          <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+            Favour Int'l School · Secure school records
+          </p>
+        </div>
       </div>
     </main>
   );
