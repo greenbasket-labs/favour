@@ -3,16 +3,13 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 
 const COOKIE = "skulgo_session";
-const OWNER_COOKIE = "skulgo_owner_session";
 const DEVICE_COOKIE = "skulgo_device";
 
 function deviceCookieName(userId: string) {
   return `${DEVICE_COOKIE}_${createHmac("sha256", secret()).update(`cookie:${userId}`).digest("hex").slice(0, 32)}`;
 }
 const MAX_AGE = 60 * 60 * 24 * 7;
-const OWNER_SESSION_MAX_AGE = 60 * 60 * 24 * 30;
 const DEVICE_MAX_AGE = 60 * 60 * 24 * 30;
-const OWNER_DEVICE_INACTIVITY_DAYS = 7;
 const DEFAULT_DEVICE_INACTIVITY_DAYS = 30;
 
 type Session = {
@@ -184,32 +181,12 @@ export function setSession(
   );
 }
 
-export function setOwnerSession(response: Response, user: { id: string }, deviceId: string) {
-  const token = encode({
-    userId: user.id,
-    membershipId: null,
-    deviceId,
-    exp: Math.floor(Date.now() / 1000) + OWNER_SESSION_MAX_AGE,
-  });
-
-  response.headers.append(
-    "Set-Cookie",
-    `${OWNER_COOKIE}=${token}; Path=/owner; HttpOnly; SameSite=Lax; Max-Age=${OWNER_SESSION_MAX_AGE}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`
-  );
-}
-
 export async function clearSession(response: Response) {
   response.headers.append("Set-Cookie", `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
-  response.headers.append("Set-Cookie", `${OWNER_COOKIE}=; Path=/owner; HttpOnly; SameSite=Lax; Max-Age=0`);
 }
 
 export async function getSession() {
   const token = (await cookies()).get(COOKIE)?.value;
-  return token ? decode(token) : null;
-}
-
-export async function getOwnerSession() {
-  const token = (await cookies()).get(OWNER_COOKIE)?.value;
   return token ? decode(token) : null;
 }
 
@@ -246,11 +223,7 @@ export async function getCurrentUser() {
 
   if (!user) return null;
 
-  const ownerEmail = process.env.SKULGO_OWNER_EMAIL?.trim().toLowerCase();
-  const inactivityDays =
-    ownerEmail && user.email.toLowerCase() === ownerEmail
-      ? OWNER_DEVICE_INACTIVITY_DAYS
-      : DEFAULT_DEVICE_INACTIVITY_DAYS;
+  const inactivityDays = DEFAULT_DEVICE_INACTIVITY_DAYS;
   const now = new Date();
 
   if (isStale(device.lastSeenAt, now, inactivityDays)) {
