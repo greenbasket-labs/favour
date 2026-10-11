@@ -75,6 +75,9 @@ model School {
   classSubjects ClassSubject[]
   attendanceSessions AttendanceSession[]
   supportThreads SupportThread[]
+  teachers Teacher[]
+  parents Parent[]
+  cashiers Cashier[]
 }
 
 enum ValidatorApplicationStatus {
@@ -309,6 +312,7 @@ model SchoolClass {
   section Section @relation(fields:[sectionId],references:[id],onDelete:Cascade)
   name String
   arm String?
+  active Boolean @default(true)
   students Student[]
   assignments TeacherAssignment[]
   attendance Attendance[]
@@ -348,26 +352,44 @@ model ClassSubject {
 
 model Teacher {
   id String @id @default(cuid())
-  userId String @unique
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  userId String? @unique
+  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
+  schoolId String?
+  school School? @relation(fields:[schoolId],references:[id],onDelete:SetNull)
   teacherCode String @unique
+  name String?
+  phone String?
   approved Boolean @default(false)
   active Boolean @default(true)
   pinHash String?
+  activationPinHash String?
+  activationExpiresAt DateTime?
   pinFailedAttempts Int @default(0)
   pinLockedUntil DateTime?
   assignments TeacherAssignment[]
   classTeacherAssignments ClassTeacher[]
   attendanceSessions AttendanceSession[]
+  deviceSessions DeviceSession[]
 }
 
 model Cashier {
   id String @id @default(cuid())
-  userId String @unique
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  userId String? @unique
+  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
+  schoolId String?
+  school School? @relation(fields:[schoolId],references:[id],onDelete:SetNull)
   cashierCode String @unique
+  name String?
+  phone String?
   approved Boolean @default(false)
+  active Boolean @default(true)
+  pinHash String?
+  activationPinHash String?
+  activationExpiresAt DateTime?
+  pinFailedAttempts Int @default(0)
+  pinLockedUntil DateTime?
   createdAt DateTime @default(now())
+  deviceSessions DeviceSession[]
 }
 
 model Student {
@@ -375,7 +397,7 @@ model Student {
   schoolId String
   school School @relation(fields:[schoolId],references:[id],onDelete:Cascade)
   userId String? @unique
-  user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
+  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
   admissionId String @unique
   firstName String
   lastName String
@@ -386,6 +408,8 @@ model Student {
   class SchoolClass? @relation(fields:[classId],references:[id],onDelete:SetNull)
   active Boolean @default(true)
   pinHash String?
+  activationPinHash String?
+  activationExpiresAt DateTime?
   pinFailedAttempts Int @default(0)
   pinLockedUntil DateTime?
   parentLinks ParentStudent[]
@@ -394,13 +418,26 @@ model Student {
   results Result[]
   feeRecords FeeRecord[]
   payments Payment[]
+  deviceSessions DeviceSession[]
 }
 
 model Parent {
   id String @id @default(cuid())
-  userId String @unique
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  schoolId String?
+  school School? @relation(fields:[schoolId],references:[id],onDelete:SetNull)
+  userId String? @unique
+  user User? @relation(fields:[userId],references:[id],onDelete:SetNull)
+  parentCode String? @unique
+  name String?
+  phone String?
+  active Boolean @default(true)
+  pinHash String?
+  activationPinHash String?
+  activationExpiresAt DateTime?
+  pinFailedAttempts Int @default(0)
+  pinLockedUntil DateTime?
   links ParentStudent[]
+  deviceSessions DeviceSession[]
 }
 
 model ParentStudent {
@@ -602,8 +639,11 @@ model AuditLog {
   id String @id @default(cuid())
   schoolId String
   school School @relation(fields:[schoolId],references:[id],onDelete:Cascade)
-  actorUserId String
-  actor User @relation("AuditActor",fields:[actorUserId],references:[id],onDelete:Cascade)
+  actorUserId String?
+  actor User? @relation("AuditActor",fields:[actorUserId],references:[id],onDelete:SetNull)
+  actorType String?
+  actorIdentityId String?
+  actorName String?
   action String
   entity String
   entityId String
@@ -611,6 +651,7 @@ model AuditLog {
   createdAt DateTime @default(now())
   @@index([schoolId,createdAt])
   @@index([schoolId,entity,entityId])
+  @@index([actorType,actorIdentityId])
 }
 
 model ClassTeacher {
@@ -626,13 +667,25 @@ model ClassTeacher {
 
 model DeviceSession {
   id String @id @default(cuid())
-  userId String
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+  userId String?
+  user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
+  teacherId String?
+  teacher Teacher? @relation(fields:[teacherId],references:[id],onDelete:Cascade)
+  studentId String?
+  student Student? @relation(fields:[studentId],references:[id],onDelete:Cascade)
+  parentId String?
+  parent Parent? @relation(fields:[parentId],references:[id],onDelete:Cascade)
+  cashierId String?
+  cashier Cashier? @relation(fields:[cashierId],references:[id],onDelete:Cascade)
   deviceHash String @unique
   createdAt DateTime @default(now())
   lastSeenAt DateTime @default(now())
   revokedAt DateTime?
   @@index([userId,revokedAt])
+  @@index([teacherId,revokedAt])
+  @@index([studentId,revokedAt])
+  @@index([parentId,revokedAt])
+  @@index([cashierId,revokedAt])
 }
 
 enum SupportStatus {

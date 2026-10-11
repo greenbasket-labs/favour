@@ -85,10 +85,7 @@ export default function AdminAddPerson({ schoolId, classes }: { schoolId: string
     <section className="card" style={{ marginBottom: 18 }}>
       <p className="muted">Admin</p>
       <h2>Add person</h2>
-      <p className="muted">
-        Add a teacher, student or parent directly. If they already have a SkulGo Account ID, use it.
-        Otherwise SkulGo creates their personal account and sends setup instructions.
-      </p>
+      
 
       <form onSubmit={submit} className="grid" style={{ marginTop: 14 }}>
         <label className="grid">
@@ -98,15 +95,6 @@ export default function AdminAddPerson({ schoolId, classes }: { schoolId: string
             <option value="STUDENT">Student</option>
             <option value="PARENT">Parent</option>
           </select>
-        </label>
-
-        <label className="grid">
-          <span>SkulGo Account ID <span className="muted">(optional)</span></span>
-          <input
-            value={accountId}
-            onChange={event => setAccountId(event.target.value.toUpperCase())}
-            placeholder="Use existing Account ID"
-          />
         </label>
 
         <div className="grid grid-2">

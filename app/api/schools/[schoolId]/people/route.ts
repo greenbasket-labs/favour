@@ -182,7 +182,10 @@ export async function POST(
     });
 
     if (role === "TEACHER") {
-      const existingTeacher = await tx.teacher.findUnique({ where: { userId: user!.id } });
+      const existingTeacher = await tx.teacher.findUnique({
+        where: { userId: user!.id },
+        select: { id: true, approved: true },
+      });
       if (!existingTeacher) {
         const ids = await tx.teacher.findMany({ select: { teacherCode: true } });
         await tx.teacher.create({

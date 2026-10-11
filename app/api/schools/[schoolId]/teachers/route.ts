@@ -10,34 +10,85 @@ export async function GET(
   const { schoolId } = await params;
 
   if (!user?.membership || user.membership.schoolId !== schoolId) {
-    return NextResponse.json({ error: "School access required" }, { status: 403 });
+    return NextResponse.json(
+      { error: "School access required" },
+      { status: 403 }
+    );
   }
 
   const teachers = await db.teacher.findMany({
-    where: { user: { memberships: { some: { schoolId, active: true, role: "TEACHER" } } } },
+    where: {
+      user: {
+        memberships: {
+          some: { schoolId, role: "TEACHER" },
+        },
+      },
+    },
     include: {
       user: {
         select: {
           id: true,
           name: true,
           email: true,
-          memberships: { where: { schoolId, active: true, role: "TEACHER" }, select: { id: true } },
+          phone: true,
+          memberships: {
+            where: { schoolId, role: "TEACHER" },
+            select: {
+              id: true,
+              active: true,
+              createdAt: true,
+              endedAt: true,
+              endReason: true,
+            },
+          },
         },
       },
     },
     orderBy: { user: { name: "asc" } },
   });
 
-  return NextResponse.json(teachers.map(teacher => ({
-    ...teacher,
-    membershipId: teacher.user.memberships[0]?.id ?? null,
-    user: { id: teacher.user.id, name: teacher.user.name, email: teacher.user.email },
-  })));
+  return NextResponse.json(
+    teachers.map((teacher) => {
+      const linkedUser = teacher.user;
+
+      if (!linkedUser) {
+        return {
+          ...teacher,
+          membershipId: null,
+          membershipActive: false,
+          joinedAt: null,
+          endedAt: null,
+          endReason: null,
+          user: null,
+        };
+      }
+
+      const membership = linkedUser.memberships[0];
+
+      return {
+        ...teacher,
+        membershipId: membership?.id ?? null,
+        membershipActive: membership?.active ?? false,
+        joinedAt: membership?.createdAt ?? null,
+        endedAt: membership?.endedAt ?? null,
+        endReason: membership?.endReason ?? null,
+        user: {
+          id: linkedUser.id,
+          name: linkedUser.name,
+          email: linkedUser.email,
+          phone: linkedUser.phone,
+        },
+      };
+    })
+  );
 }
 
 export async function POST() {
   return NextResponse.json(
-    { error: "Teacher accounts are created from personal SkulGo accounts. Search for this school and send a job request." },
+    {
+      error:
+        "Teachers must be added or approved by the school administrator through the school's staff workflow.",
+    },
     { status: 410 }
   );
 }

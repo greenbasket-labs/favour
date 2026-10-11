@@ -17,7 +17,7 @@ export async function GET(
   }
 
   const classes = await db.schoolClass.findMany({
-    where: { schoolId },
+    where: { schoolId, active: true },
     select: {
       id: true,
       name: true,

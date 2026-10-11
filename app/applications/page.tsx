@@ -112,7 +112,7 @@ export default function ApplicationsPage() {
       <div className="workspace-header">
         <p className="muted">Admin</p>
         <h1>Applications</h1>
-        <p>Review student, staff and parent requests for this school.</p>
+        <p>Create people manually or review applications submitted through school forms.</p>
       </div>
 
       {message && <p role="status" className="muted">{message}</p>}
@@ -122,7 +122,7 @@ export default function ApplicationsPage() {
       {!requests.length && !message.includes("Loading") ? (
         <div className="card">
           <strong>No pending applications.</strong>
-          <p className="muted">New school requests will appear here.</p>
+          
         </div>
       ) : (
         <div className="grid">
