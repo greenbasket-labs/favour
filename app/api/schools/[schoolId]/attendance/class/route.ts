@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
@@ -17,6 +18,46 @@ export async function GET(
   const date = new Date(dateValue);
   if (Number.isNaN(date.getTime())) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+  }
+
+  const user = await getCurrentUser();
+
+  if (!user?.membership || user.membership.schoolId !== schoolId) {
+    return NextResponse.json(
+      { error: "School access required" },
+      { status: 403 }
+    );
+  }
+
+  if (user.membership.role === "TEACHER") {
+    const teacher = await db.teacher.findUnique({
+      where: { userId: user.id },
+      select: { id: true, approved: true },
+    });
+
+    if (!teacher?.approved) {
+      return NextResponse.json(
+        { error: "Teacher is not approved" },
+        { status: 403 }
+      );
+    }
+
+    const assignment = await db.classTeacher.findFirst({
+      where: { schoolId, classId, teacherId: teacher.id },
+      select: { id: true },
+    });
+
+    if (!assignment) {
+      return NextResponse.json(
+        { error: "You cannot view attendance for this class" },
+        { status: 403 }
+      );
+    }
+  } else if (user.membership.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Attendance access required" },
+      { status: 403 }
+    );
   }
 
   const schoolClass = await db.schoolClass.findFirst({
