@@ -31,6 +31,37 @@ export async function GET(
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
+  if (user.membership.role === "TEACHER") {
+    const teacher = await db.teacher.findUnique({
+      where: { userId: user.id },
+      select: { id: true, approved: true },
+    });
+
+    if (!teacher?.approved) {
+      return NextResponse.json(
+        { error: "Teacher is not approved" },
+        { status: 403 }
+      );
+    }
+
+    const assignment = await db.classTeacher.findFirst({
+      where: { schoolId, classId, teacherId: teacher.id },
+      select: { id: true },
+    });
+
+    if (!assignment) {
+      return NextResponse.json(
+        { error: "You cannot view attendance for this class" },
+        { status: 403 }
+      );
+    }
+  } else if (user.membership.role !== "ADMIN") {
+    return NextResponse.json(
+      { error: "Attendance access required" },
+      { status: 403 }
+    );
+  }
+
   const students = await db.student.findMany({
     where: { schoolId, classId },
     select: { id: true, gender: true },
