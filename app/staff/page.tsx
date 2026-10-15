@@ -143,7 +143,6 @@ export default function StaffPage() {
       <div className="workspace-header">
         <p className="muted">Admin</p>
         <h1>Staff</h1>
-        <p>Academic and non-academic staff</p>
       </div>
 
       {message && <p role="status" className="muted">{message}</p>}
@@ -165,27 +164,25 @@ export default function StaffPage() {
               )}
 
               <p className="muted">
-                Teacher ID: <strong>{teacher.teacherCode}</strong>
+                <strong>{teacher.teacherCode}</strong>
               </p>
-
-              <p className="muted">Type: Academic staff</p>
 
               <p className="muted">
                 Status: {!teacher.membershipActive
                   ? "Former staff"
                   : teacher.approved
-                    ? "Approved"
+                    ? "Active"
                     : "Pending"}
               </p>
 
               <p className="muted">
-                Joined school: <strong>{formatDate(teacher.joinedAt)}</strong>
+                <strong>{formatDate(teacher.joinedAt)}</strong>
               </p>
 
               {!teacher.membershipActive && (
                 <>
                   <p className="muted">
-                    Leaving date: <strong>{formatDate(teacher.endedAt)}</strong>
+                    End: <strong>{formatDate(teacher.endedAt)}</strong>
                   </p>
                   <p className="muted">
                     Leaving reason: <strong>{teacher.endReason || "Not recorded"}</strong>
@@ -241,27 +238,25 @@ export default function StaffPage() {
               )}
 
               <p className="muted">
-                Cashier ID: <strong>{cashier.cashierCode ?? "Not assigned"}</strong>
+                <strong>{cashier.cashierCode ?? "Not assigned"}</strong>
               </p>
-
-              <p className="muted">Type: Non-academic staff</p>
 
               <p className="muted">
                 Status: {!cashier.membershipActive
                   ? "Former staff"
                   : cashier.approved
-                    ? "Approved"
+                    ? "Active"
                     : "Pending"}
               </p>
 
               <p className="muted">
-                Joined school: <strong>{formatDate(cashier.joinedAt)}</strong>
+                <strong>{formatDate(cashier.joinedAt)}</strong>
               </p>
 
               {!cashier.membershipActive && (
                 <>
                   <p className="muted">
-                    Leaving date: <strong>{formatDate(cashier.endedAt)}</strong>
+                    End: <strong>{formatDate(cashier.endedAt)}</strong>
                   </p>
                   <p className="muted">
                     Leaving reason: <strong>{cashier.endReason || "Not recorded"}</strong>

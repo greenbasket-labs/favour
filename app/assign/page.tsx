@@ -1,20 +1,51 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 
-type Teacher = { id: string; teacherCode: string; user: { name: string; email: string } };
-type SchoolClass = { id: string; name: string; arm: string | null; section: { name: string } };
+type Teacher = {
+  id: string;
+  teacherCode: string;
+  approved: boolean;
+  active: boolean;
+  membershipActive: boolean;
+  user: { name: string; email: string };
+};
+
+type SchoolClass = {
+  id: string;
+  name: string;
+  arm: string | null;
+  section: { name: string };
+};
+
 type Subject = { id: string; name: string };
+
 type Assignment = {
   id: string;
-  teacher: { user: { name: string; email: string }; teacherCode: string };
-  class: { name: string; arm: string | null; section: { name: string } };
+  teacher: {
+    user: { name: string; email: string } | null;
+    teacherCode: string;
+  };
+  class: {
+    name: string;
+    arm: string | null;
+    section: { name: string };
+  };
   subject: { name: string };
 };
+
 type ClassTeacher = {
   id: string;
-  teacher: { user: { name: string }; teacherCode: string };
-  class: { name: string; arm: string | null; section: { name: string } };
+  teacher: {
+    user: { name: string } | null;
+    teacherCode: string;
+  };
+  class: {
+    name: string;
+    arm: string | null;
+    section: { name: string };
+  };
 };
 
 export default function AssignPage() {
@@ -31,6 +62,15 @@ export default function AssignPage() {
   const [masterClassId, setMasterClassId] = useState("");
   const [message, setMessage] = useState("Loading...");
   const [busy, setBusy] = useState(false);
+  const [activationPin, setActivationPin] = useState<string | null>(null);
+  const [pinCopied, setPinCopied] = useState(false);
+
+  const eligibleTeachers = teachers.filter(
+    (teacher) =>
+      teacher.approved &&
+      teacher.active &&
+      teacher.membershipActive
+  );
 
   async function load() {
     try {
@@ -45,37 +85,80 @@ export default function AssignPage() {
 
       setSchoolId(id);
 
-      const [teachersR, classesR, assignmentsR, classTeachersR] = await Promise.all([
+      const [
+        teachersR,
+        classesR,
+        assignmentsR,
+        classTeachersR,
+      ] = await Promise.all([
         fetch(`/api/schools/${id}/teachers`),
         fetch(`/api/schools/${id}/classes`),
         fetch(`/api/schools/${id}/assignments`),
         fetch(`/api/schools/${id}/class-teachers`),
       ]);
 
-      const [teachersD, classesD, assignmentsD, classTeachersD] = await Promise.all([
+      const [
+        teachersD,
+        classesD,
+        assignmentsD,
+        classTeachersD,
+      ] = await Promise.all([
         teachersR.json().catch(() => []),
         classesR.json().catch(() => []),
         assignmentsR.json().catch(() => []),
         classTeachersR.json().catch(() => []),
       ]);
 
-      if (!teachersR.ok) throw new Error(teachersD?.error || "Unable to load teachers.");
-      if (!classesR.ok) throw new Error(classesD?.error || "Unable to load classes.");
-      if (!assignmentsR.ok) throw new Error(assignmentsD?.error || "Unable to load assignments.");
-      if (!classTeachersR.ok) throw new Error(classTeachersD?.error || "Unable to load class teachers.");
+      if (!teachersR.ok) {
+        throw new Error(
+          teachersD?.error || "Unable to load teachers."
+        );
+      }
+
+      if (!classesR.ok) {
+        throw new Error(
+          classesD?.error || "Unable to load classes."
+        );
+      }
+
+      if (!assignmentsR.ok) {
+        throw new Error(
+          assignmentsD?.error || "Unable to load assignments."
+        );
+      }
+
+      if (!classTeachersR.ok) {
+        throw new Error(
+          classTeachersD?.error || "Unable to load class teachers."
+        );
+      }
 
       setTeachers(Array.isArray(teachersD) ? teachersD : []);
       setClasses(Array.isArray(classesD) ? classesD : []);
-      setAssignments(Array.isArray(assignmentsD) ? assignmentsD : []);
-      setClassTeachers(Array.isArray(classTeachersD) ? classTeachersD : []);
+      setAssignments(
+        Array.isArray(assignmentsD) ? assignmentsD : []
+      );
+      setClassTeachers(
+        Array.isArray(classTeachersD) ? classTeachersD : []
+      );
       setMessage("");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to load assignments.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to load assignments."
+      );
     }
   }
 
   useEffect(() => {
     void load();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setActivationPin(null);
+    };
   }, []);
 
   async function loadSubjects(targetClassId: string) {
@@ -85,10 +168,16 @@ export default function AssignPage() {
     }
 
     const response = await fetch(
-      `/api/schools/${schoolId}/class-subjects?classId=${targetClassId}`
+      `/api/schools/${schoolId}/class-subjects?classId=${encodeURIComponent(targetClassId)}`
     );
+
     const data = await response.json().catch(() => []);
-    setSubjects(response.ok && Array.isArray(data) ? data.map((item: { subject: Subject }) => item.subject) : []);
+
+    setSubjects(
+      response.ok && Array.isArray(data)
+        ? data.map((item: { subject: Subject }) => item.subject)
+        : []
+    );
   }
 
   useEffect(() => {
@@ -105,21 +194,42 @@ export default function AssignPage() {
     setMessage("");
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/assignments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacherId, classId, subjectId }),
-      });
+      const response = await fetch(
+        `/api/schools/${schoolId}/assignments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teacherId,
+            classId,
+            subjectId,
+          }),
+        }
+      );
+
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) throw new Error(data?.error || "Assignment could not be saved.");
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Assignment could not be saved."
+        );
+      }
+
+      if (data?.activationPin) {
+        setActivationPin(data.activationPin);
+        setPinCopied(false);
+      }
 
       setTeacherId("");
       setSubjectId("");
       setMessage("Teacher assignment saved.");
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Assignment could not be saved.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Assignment could not be saved."
+      );
     } finally {
       setBusy(false);
     }
@@ -127,7 +237,9 @@ export default function AssignPage() {
 
   async function setClassTeacher() {
     if (!masterTeacherId || !masterClassId) {
-      setMessage("Choose a teacher and class for class-master responsibility.");
+      setMessage(
+        "Choose a teacher and class for class-master responsibility."
+      );
       return;
     }
 
@@ -135,19 +247,39 @@ export default function AssignPage() {
     setMessage("");
 
     try {
-      const response = await fetch(`/api/schools/${schoolId}/class-teachers`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacherId: masterTeacherId, classId: masterClassId }),
-      });
+      const response = await fetch(
+        `/api/schools/${schoolId}/class-teachers`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teacherId: masterTeacherId,
+            classId: masterClassId,
+          }),
+        }
+      );
+
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) throw new Error(data?.error || "Class-master assignment failed.");
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Class-master assignment failed."
+        );
+      }
+
+      if (data?.activationPin) {
+        setActivationPin(data.activationPin);
+        setPinCopied(false);
+      }
 
       setMessage("Class-master assignment saved.");
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Class-master assignment failed.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Class-master assignment failed."
+      );
     } finally {
       setBusy(false);
     }
@@ -158,82 +290,188 @@ export default function AssignPage() {
       <div className="workspace-header">
         <p className="muted">Admin</p>
         <h1>Assign</h1>
-        <p>Connect approved teachers to the classes and subjects they handle.</p>
+        <p>
+          Connect approved teachers to the classes and subjects they handle.
+        </p>
       </div>
 
-      {message && <p role="status" className="muted">{message}</p>}
+      {message && (
+        <p role="status" className="muted">
+          {message}
+        </p>
+      )}
+
+      {!message.includes("Loading") && teachers.length > 0 &&
+        eligibleTeachers.length === 0 && (
+          <p className="muted">
+            No eligible teachers are available. Check teacher approval,
+            active status, and school membership on the Staff page.
+          </p>
+        )}
 
       <section className="card" style={{ marginBottom: 18 }}>
         <h2>Teacher → Class → Subject</h2>
+
         <div className="grid grid-2">
-          <select value={teacherId} onChange={e => setTeacherId(e.target.value)}>
+          <select
+            value={teacherId}
+            onChange={(e) => setTeacherId(e.target.value)}
+          >
             <option value="">Choose teacher</option>
-            {teachers.map(item => (
+            {eligibleTeachers.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.user.name} · {item.teacherCode}
               </option>
             ))}
           </select>
 
-          <select value={classId} onChange={e => { setClassId(e.target.value); setSubjectId(""); }}>
+          <select
+            value={classId}
+            onChange={(e) => {
+              setClassId(e.target.value);
+              setSubjectId("");
+            }}
+          >
             <option value="">Choose class</option>
-            {classes.map(item => (
+            {classes.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.section.name} · {item.name}{item.arm ? ` · ${item.arm}` : ""}
+                {item.section.name} · {item.name}
+                {item.arm ? ` · ${item.arm}` : ""}
               </option>
             ))}
           </select>
 
-          <select value={subjectId} onChange={e => setSubjectId(e.target.value)}>
+          <select
+            value={subjectId}
+            onChange={(e) => setSubjectId(e.target.value)}
+          >
             <option value="">Choose subject</option>
-            {subjects.map(item => (
-              <option key={item.id} value={item.id}>{item.name}</option>
+            {subjects.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
             ))}
           </select>
         </div>
 
-        <button type="button" disabled={busy} onClick={() => void createAssignment()} style={{ marginTop: 12 }}>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void createAssignment()}
+          style={{ marginTop: 12 }}
+        >
           {busy ? "Saving..." : "Assign teacher"}
         </button>
       </section>
 
       <section className="card" style={{ marginBottom: 18 }}>
         <h2>Class master</h2>
+
         <div className="grid grid-2">
-          <select value={masterTeacherId} onChange={e => setMasterTeacherId(e.target.value)}>
+          <select
+            value={masterTeacherId}
+            onChange={(e) => setMasterTeacherId(e.target.value)}
+          >
             <option value="">Choose teacher</option>
-            {teachers.map(item => (
-              <option key={item.id} value={item.id}>{item.user.name} · {item.teacherCode}</option>
+            {eligibleTeachers.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.user.name} · {item.teacherCode}
+              </option>
             ))}
           </select>
 
-          <select value={masterClassId} onChange={e => setMasterClassId(e.target.value)}>
+          <select
+            value={masterClassId}
+            onChange={(e) => setMasterClassId(e.target.value)}
+          >
             <option value="">Choose class</option>
-            {classes.map(item => (
+            {classes.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.section.name} · {item.name}{item.arm ? ` · ${item.arm}` : ""}
+                {item.section.name} · {item.name}
+                {item.arm ? ` · ${item.arm}` : ""}
               </option>
             ))}
           </select>
         </div>
 
-        <button type="button" disabled={busy} onClick={() => void setClassTeacher()} style={{ marginTop: 12 }}>
-          Save class master
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void setClassTeacher()}
+          style={{ marginTop: 12 }}
+        >
+          {busy ? "Saving..." : "Save class master"}
         </button>
       </section>
 
+      {activationPin && (
+        <section className="card" style={{ marginBottom: 18 }}>
+          <h2>Teacher activation PIN</h2>
+
+          <p>
+            Give this temporary PIN to the teacher. It expires 24 hours
+            after it is issued.
+          </p>
+
+          <p>
+            <strong>Temporary PIN: </strong>
+            <span style={{ fontSize: 24, letterSpacing: 4 }}>
+              {activationPin}
+            </span>
+          </p>
+
+          <button
+            type="button"
+            disabled={pinCopied}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(activationPin);
+                setPinCopied(true);
+              } catch {
+                setMessage(
+                  "Copy failed. Please note the PIN before closing this panel."
+                );
+              }
+            }}
+          >
+            {pinCopied ? "PIN copied" : "Copy PIN"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActivationPin(null);
+              setPinCopied(false);
+            }}
+            style={{ marginLeft: 8 }}
+          >
+            Close PIN
+          </button>
+
+          <p className="muted">
+            This PIN will not be shown again after you close this panel
+            or leave the page.
+          </p>
+        </section>
+      )}
+
       <section className="card">
         <h2>Current assignments</h2>
+
         {!assignments.length ? (
           <p className="muted">No teacher assignments yet.</p>
         ) : (
           <div className="grid">
-            {assignments.map(item => (
+            {assignments.map((item) => (
               <div key={item.id}>
-                <strong>{item.teacher.user.name}</strong>
+                <strong>
+                  {item.teacher.user?.name ?? item.teacher.teacherCode}
+                </strong>
                 <p className="muted">
                   {item.class.section.name} · {item.class.name}
-                  {item.class.arm ? ` · ${item.class.arm}` : ""} · {item.subject.name}
+                  {item.class.arm ? ` · ${item.class.arm}` : ""}
+                  {" · "}
+                  {item.subject.name}
                 </p>
               </div>
             ))}
@@ -241,13 +479,16 @@ export default function AssignPage() {
         )}
 
         <h2 style={{ marginTop: 18 }}>Current class masters</h2>
+
         {!classTeachers.length ? (
           <p className="muted">No class-master assignments yet.</p>
         ) : (
           <div className="grid">
-            {classTeachers.map(item => (
+            {classTeachers.map((item) => (
               <div key={item.id}>
-                <strong>{item.teacher.user.name}</strong>
+                <strong>
+                  {item.teacher.user?.name ?? item.teacher.teacherCode}
+                </strong>
                 <p className="muted">
                   {item.class.section.name} · {item.class.name}
                   {item.class.arm ? ` · ${item.class.arm}` : ""}

@@ -25,11 +25,39 @@ export default function SubjectsPage() {
   const [message, setMessage] = useState("");
 
   async function loadClasses(id: string) {
-    const response = await fetch(`/api/schools/${id}/classes`);
-    const data = await response.json().catch(() => []);
+    const response = await fetch(`/api/schools/${id}/sections`);
+    const data = await response.json().catch(() => null);
     if (!response.ok) throw new Error(data?.error || "Unable to load classes.");
-    setClasses(data);
-    if (!selectedClassId && data.length) setSelectedClassId(data[0].id);
+    if (!Array.isArray(data)) throw new Error("The sections response is invalid.");
+
+    const allClasses: SchoolClass[] = data.flatMap(
+      (section: {
+        name: string;
+        classes?: Array<{ id: string; name: string; arm: string | null; active?: boolean }>;
+      }) =>
+        (section.classes ?? [])
+          .filter(item => item.active !== false)
+          .map(item => ({
+            id: item.id,
+            name: item.name,
+            arm: item.arm,
+            section: { name: section.name },
+          }))
+    );
+
+    const namesWithArms = new Set(
+      allClasses.filter(item => Boolean(item.arm)).map(item => item.name)
+    );
+    const visibleClasses = allClasses.filter(
+      item => item.arm || !namesWithArms.has(item.name)
+    );
+
+    setClasses(visibleClasses);
+    setSelectedClassId(current =>
+      visibleClasses.some(item => item.id === current)
+        ? current
+        : visibleClasses[0]?.id ?? ""
+    );
   }
 
   async function loadSubjects(id = selectedClassId) {
@@ -70,7 +98,6 @@ export default function SubjectsPage() {
     if (!selectedClassId || !schoolId) return;
     setSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/schools/${schoolId}/class-subjects`, {
         method: "POST",
@@ -92,7 +119,6 @@ export default function SubjectsPage() {
     if (!schoolId || !classSubjectId) return;
     setSaving(true);
     setMessage("");
-
     try {
       const response = await fetch(`/api/schools/${schoolId}/class-subjects`, {
         method: "DELETE",
@@ -115,7 +141,6 @@ export default function SubjectsPage() {
     if (!name || !selectedClassId || !schoolId) return;
     setSaving(true);
     setMessage("");
-
     try {
       const subjectResponse = await fetch(`/api/schools/${schoolId}/subjects`, {
         method: "POST",
@@ -123,14 +148,12 @@ export default function SubjectsPage() {
         body: JSON.stringify({ name }),
       });
       const subject = await subjectResponse.json().catch(() => ({}));
-
       let subjectId = subject?.id;
       if (!subjectId && subjectResponse.status === 409) {
         const listResponse = await fetch(`/api/schools/${schoolId}/subjects`);
         const list = await listResponse.json().catch(() => []);
         subjectId = list.find((item: { name: string }) => item.name === name)?.id;
       }
-
       if (!subjectId) throw new Error(subject?.error || "Unable to create subject.");
 
       const linkResponse = await fetch(`/api/schools/${schoolId}/class-subjects`, {
@@ -139,7 +162,6 @@ export default function SubjectsPage() {
         body: JSON.stringify({ classId: selectedClassId, subjectId }),
       });
       const link = await linkResponse.json().catch(() => ({}));
-
       if (!linkResponse.ok && linkResponse.status !== 409) {
         throw new Error(link?.error || "Unable to connect subject to class.");
       }
@@ -189,7 +211,7 @@ export default function SubjectsPage() {
           </section>
 
           <section className="card" style={{ marginBottom: 18 }}>
-            <h2>{selectedClass?.name} subjects</h2>
+            <h2>{selectedClass?.name}{selectedClass?.arm ? ` ${selectedClass.arm}` : ""} subjects</h2>
             <p className="muted">Starter subjects can be saved, then adjusted by Admin.</p>
             <button className="button" onClick={() => void saveStarterSubjects()} disabled={saving}>
               {saving ? "Saving..." : "Save Starter Subjects"}

@@ -39,7 +39,6 @@ export function navForRole(role: WorkspaceRole): WorkspaceNavGroup[] {
           label: "Communication",
           items: [
             ["Announcements", "/announcements"],
-            ["Support", "/support"],
           ],
         },
       ];

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getCurrentSchoolIdentity } from "@/lib/school-identity-auth";
 import { navForRole, type WorkspaceRole } from "@/lib/workspace-nav";
 import { db } from "@/lib/db";
 
@@ -24,6 +25,84 @@ function getGreeting() {
 
 export default async function Dashboard() {
   const u = await getCurrentUser();
+
+  if (!u) {
+    const identity = await getCurrentSchoolIdentity();
+
+    if (!identity || identity.type !== "TEACHER") {
+      redirect("/login");
+    }
+
+    const teacher = await db.teacher.findFirst({
+      where: {
+        id: identity.id,
+        schoolId: identity.schoolId,
+        active: true,
+        approved: true,
+      },
+      include: {
+        assignments: {
+          include: {
+            class: { include: { section: true } },
+            subject: true,
+          },
+        },
+        classTeacherAssignments: {
+          include: {
+            class: { include: { section: true } },
+          },
+        },
+      },
+    });
+
+    if (!teacher) redirect("/login");
+
+    return (
+      <main className="shell">
+        <div className="card" style={{ maxWidth: 900, margin: "32px auto" }}>
+          <p className="muted">Favour Int&apos;l School · Teacher Workspace</p>
+          <h1>Welcome, {identity.name}</h1>
+          <p className="muted">Teacher ID: {identity.code}</p>
+
+          <div className="card" style={{ marginTop: 20 }}>
+            <h2>My subjects and classes</h2>
+            {!teacher.assignments.length ? (
+              <p className="muted">No subject assignments yet.</p>
+            ) : (
+              <div className="grid" style={{ marginTop: 12 }}>
+                {teacher.assignments.map((assignment) => (
+                  <div key={assignment.id}>
+                    <strong>{assignment.subject.name}</strong>
+                    <p className="muted">
+                      {assignment.class.section.name} · {assignment.class.name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card" style={{ marginTop: 20 }}>
+            <h2>Class teacher duties</h2>
+            {!teacher.classTeacherAssignments.length ? (
+              <p className="muted">No class teacher duties assigned.</p>
+            ) : (
+              <div className="grid" style={{ marginTop: 12 }}>
+                {teacher.classTeacherAssignments.map((assignment) => (
+                  <div key={assignment.id}>
+                    <strong>
+                      {assignment.class.section.name} · {assignment.class.name}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (!u) redirect("/login");
 
   if (!u.membership) {

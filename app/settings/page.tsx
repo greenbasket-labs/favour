@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Band = { min: number; grade: string };
+
 type AssessmentComponent = {
   key: "ca1" | "ca2" | "ca3" | "ca4" | "exam";
   name: string;
@@ -11,6 +12,7 @@ type AssessmentComponent = {
   type: "CA" | "EXAM";
   sortOrder: number;
 };
+
 type AssessmentSetup = Record<string, { components: AssessmentComponent[] }>;
 
 type Settings = {
@@ -18,6 +20,14 @@ type Settings = {
   firstTermLabel: string;
   secondTermLabel: string;
   thirdTermLabel: string;
+
+  firstTermStartDate: string;
+  firstTermEndDate: string;
+  secondTermStartDate: string;
+  secondTermEndDate: string;
+  thirdTermStartDate: string;
+  thirdTermEndDate: string;
+
   digitalResultEnabled: boolean;
   showPosition: boolean;
   showAttendance: boolean;
@@ -46,6 +56,14 @@ const DEFAULT_SETTINGS: Settings = {
   firstTermLabel: "First Term",
   secondTermLabel: "Second Term",
   thirdTermLabel: "Third Term",
+
+  firstTermStartDate: "",
+  firstTermEndDate: "",
+  secondTermStartDate: "",
+  secondTermEndDate: "",
+  thirdTermStartDate: "",
+  thirdTermEndDate: "",
+
   digitalResultEnabled: true,
   showPosition: true,
   showAttendance: true,
@@ -63,8 +81,22 @@ const DEFAULT_SETTINGS: Settings = {
   morningAttendanceEnd: "09:00",
   afternoonAttendanceStart: "13:00",
   afternoonAttendanceEnd: "14:00",
-  teacherRemarks: { A: "Excellent performance. Keep it up.", B: "Very good performance. Continue working hard.", C: "Good effort. More consistent study will improve performance.", D: "Performance is below average. More effort is required.", E: "Performance needs improvement. More focus and regular study are required.", F: "Performance is very low. Immediate improvement is required." },
-  principalRemarks: { A: "Excellent performance. Keep up the good work.", B: "Very good performance. Continue to improve.", C: "Satisfactory performance. Encourage more consistent effort.", D: "Performance needs improvement. Closer attention is advised.", E: "More effort and support are required.", F: "Significant improvement is required. Close support is advised." },
+  teacherRemarks: {
+    A: "Excellent performance. Keep it up.",
+    B: "Very good performance. Continue working hard.",
+    C: "Good effort. More consistent study will improve performance.",
+    D: "Performance is below average. More effort is required.",
+    E: "Performance needs improvement. More focus and regular study are required.",
+    F: "Performance is very low. Immediate improvement is required.",
+  },
+  principalRemarks: {
+    A: "Excellent performance. Keep up the good work.",
+    B: "Very good performance. Continue to improve.",
+    C: "Satisfactory performance. Encourage more consistent effort.",
+    D: "Performance needs improvement. Closer attention is advised.",
+    E: "More effort and support are required.",
+    F: "Significant improvement is required. Close support is advised.",
+  },
   teacherRemarkLabel: "Teacher Remark",
   principalRemarkLabel: "Principal Remark",
 };
@@ -98,11 +130,14 @@ export default function SettingsPage() {
   const [schoolId, setSchoolId] = useState("");
   const [message, setMessage] = useState("Loading...");
   const [saving, setSaving] = useState(false);
-  const [assessmentSetup, setAssessmentSetup] = useState<AssessmentSetup>({
-    "First Term": { components: [] },
-    "Second Term": { components: [] },
-    "Third Term": { components: [] },
-  });
+
+  const [assessmentSetup, setAssessmentSetup] =
+    useState<AssessmentSetup>({
+      "First Term": { components: [] },
+      "Second Term": { components: [] },
+      "Third Term": { components: [] },
+    });
+
   const [assessmentTerm, setAssessmentTerm] = useState("First Term");
 
   useEffect(() => {
@@ -113,52 +148,121 @@ export default function SettingsPage() {
     try {
       const me = await fetch("/api/auth/me");
       const meData = await me.json();
+
       const id = meData?.user?.membership?.schoolId;
-      if (!id) throw new Error("Open a school workspace first.");
-      if (meData?.user?.membership?.role !== "ADMIN") throw new Error("Admin access required.");
+
+      if (!id) {
+        throw new Error("Open a school workspace first.");
+      }
+
+      if (meData?.user?.membership?.role !== "ADMIN") {
+        throw new Error("Admin access required.");
+      }
+
       setSchoolId(id);
 
       const response = await fetch(`/api/schools/${id}/settings`);
       const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "Unable to load settings.");
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to load settings.");
+      }
+
       setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
-      setBands(Array.isArray(data.gradingBands) ? data.gradingBands : DEFAULT_BANDS);
-      if (data.assessmentSetup) setAssessmentSetup(data.assessmentSetup as AssessmentSetup);
+
+      setBands(
+        Array.isArray(data.gradingBands)
+          ? data.gradingBands
+          : DEFAULT_BANDS
+      );
+
+      if (data.assessmentSetup) {
+        setAssessmentSetup(data.assessmentSetup as AssessmentSetup);
+      }
+
       setMessage("");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to load settings.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to load settings."
+      );
     }
   }
 
-  function updateBand(index: number, field: keyof Band, value: string) {
-    setBands(current => current.map((band, i) =>
-      i === index
-        ? { ...band, [field]: field === "min" ? Number(value) : value.toUpperCase() }
-        : band
-    ));
+  function updateBand(
+    index: number,
+    field: keyof Band,
+    value: string
+  ) {
+    setBands((current) =>
+      current.map((band, i) =>
+        i === index
+          ? {
+              ...band,
+              [field]:
+                field === "min" ? Number(value) : value.toUpperCase(),
+            }
+          : band
+      )
+    );
   }
 
   async function save() {
     if (!schoolId) return;
+
     setSaving(true);
     setMessage("");
 
-    const response = await fetch(`/api/schools/${schoolId}/settings`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ settings, gradingBands: bands, assessmentSetup }),
-    });
-    const data = await response.json().catch(() => ({}));
+    try {
+      const response = await fetch(
+        `/api/schools/${schoolId}/settings`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            settings,
+            gradingBands: bands,
+            assessmentSetup,
+          }),
+        }
+      );
 
-    setSaving(false);
-    if (!response.ok) {
-      setMessage(data?.error || "Unable to save settings.");
-      return;
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(data?.error || "Unable to save settings.");
+        return;
+      }
+
+      setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
+
+      if (Array.isArray(data.gradingBands)) {
+        setBands(data.gradingBands);
+      }
+
+      setMessage("School settings saved.");
+    } catch {
+      setMessage("Unable to save settings. Check your connection and try again.");
+    } finally {
+      setSaving(false);
     }
+  }
 
-    setSettings({ ...DEFAULT_SETTINGS, ...data.settings });
-    setBands(data.gradingBands);
-    setMessage("School settings saved.");
+  function updateTermDate(
+    field:
+      | "firstTermStartDate"
+      | "firstTermEndDate"
+      | "secondTermStartDate"
+      | "secondTermEndDate"
+      | "thirdTermStartDate"
+      | "thirdTermEndDate",
+    value: string
+  ) {
+    setSettings((current) => ({
+      ...current,
+      [field]: value,
+    }));
   }
 
   return (
@@ -171,52 +275,258 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {message && <p className="muted" role="status">{message}</p>}
+      {message && (
+        <p className="muted" role="status">
+          {message}
+        </p>
+      )}
 
       <section className="card">
         <h2>Attendance settings</h2>
-        <p className="muted">Choose whether the school records attendance once in the morning or twice each day.</p>
+        <p className="muted">
+          Choose whether the school records attendance once in the morning
+          or twice each day.
+        </p>
+
         <label className="grid">
           <span>Attendance sessions</span>
-          <select value={settings.attendanceSessions} onChange={e => setSettings(s => ({ ...s, attendanceSessions: e.target.value as Settings["attendanceSessions"] }))}>
+          <select
+            value={settings.attendanceSessions}
+            onChange={(e) =>
+              setSettings((s) => ({
+                ...s,
+                attendanceSessions: e.target.value as Settings["attendanceSessions"],
+              }))
+            }
+          >
             <option value="MORNING">Morning only</option>
-            <option value="MORNING_AFTERNOON">Morning + Afternoon</option>
+            <option value="MORNING_AFTERNOON">
+              Morning + Afternoon
+            </option>
           </select>
         </label>
+
         <div className="grid grid-2" style={{ marginTop: 14 }}>
           <label className="grid">
             <span>Morning opens</span>
-            <input type="time" value={settings.morningAttendanceStart} onChange={e => setSettings(s => ({ ...s, morningAttendanceStart: e.target.value }))} />
+            <input
+              type="time"
+              value={settings.morningAttendanceStart}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  morningAttendanceStart: e.target.value,
+                }))
+              }
+            />
           </label>
+
           <label className="grid">
             <span>Morning closes</span>
-            <input type="time" value={settings.morningAttendanceEnd} onChange={e => setSettings(s => ({ ...s, morningAttendanceEnd: e.target.value }))} />
+            <input
+              type="time"
+              value={settings.morningAttendanceEnd}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  morningAttendanceEnd: e.target.value,
+                }))
+              }
+            />
           </label>
         </div>
+
         {settings.attendanceSessions === "MORNING_AFTERNOON" && (
           <div className="grid grid-2" style={{ marginTop: 14 }}>
             <label className="grid">
               <span>Afternoon opens</span>
-              <input type="time" value={settings.afternoonAttendanceStart} onChange={e => setSettings(s => ({ ...s, afternoonAttendanceStart: e.target.value }))} />
+              <input
+                type="time"
+                value={settings.afternoonAttendanceStart}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    afternoonAttendanceStart: e.target.value,
+                  }))
+                }
+              />
             </label>
+
             <label className="grid">
               <span>Afternoon closes</span>
-              <input type="time" value={settings.afternoonAttendanceEnd} onChange={e => setSettings(s => ({ ...s, afternoonAttendanceEnd: e.target.value }))} />
+              <input
+                type="time"
+                value={settings.afternoonAttendanceEnd}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    afternoonAttendanceEnd: e.target.value,
+                  }))
+                }
+              />
             </label>
           </div>
         )}
-        <p className="muted" style={{ marginTop: 10 }}>Attendance can only be recorded inside these school time windows. SkulGo uses Nigeria time.</p>
+
+        <p className="muted" style={{ marginTop: 10 }}>
+          Attendance can only be recorded inside these school time
+          windows. SkulGo uses Nigeria time.
+        </p>
       </section>
 
       <section className="card" style={{ marginTop: 18 }}>
         <h2>Report-card settings</h2>
+
         <div className="grid">
-          <input value={settings.resultHeading} onChange={e => setSettings(s => ({ ...s, resultHeading: e.target.value }))} placeholder="Report-card heading" />
+          <label className="grid">
+            <span>Report-card heading</span>
+            <input
+              value={settings.resultHeading}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  resultHeading: e.target.value,
+                }))
+              }
+              placeholder="Report-card heading"
+            />
+          </label>
+
           <div className="grid grid-2">
-            <input value={settings.firstTermLabel} onChange={e => setSettings(s => ({ ...s, firstTermLabel: e.target.value }))} placeholder="First term label" />
-            <input value={settings.secondTermLabel} onChange={e => setSettings(s => ({ ...s, secondTermLabel: e.target.value }))} placeholder="Second term label" />
+            <label className="grid">
+              <span>First term label</span>
+              <input
+                value={settings.firstTermLabel}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    firstTermLabel: e.target.value,
+                  }))
+                }
+                placeholder="First term label"
+              />
+            </label>
+
+            <label className="grid">
+              <span>Second term label</span>
+              <input
+                value={settings.secondTermLabel}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    secondTermLabel: e.target.value,
+                  }))
+                }
+                placeholder="Second term label"
+              />
+            </label>
           </div>
-          <input value={settings.thirdTermLabel} onChange={e => setSettings(s => ({ ...s, thirdTermLabel: e.target.value }))} placeholder="Third term label" />
+
+          <label className="grid">
+            <span>Third term label</span>
+            <input
+              value={settings.thirdTermLabel}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  thirdTermLabel: e.target.value,
+                }))
+              }
+              placeholder="Third term label"
+            />
+          </label>
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <h3>School term calendar</h3>
+          <p className="muted">
+            Enter the actual start and end dates for each term. These dates
+            will be used for termly attendance reports. Leave dates empty
+            until the school confirms them.
+          </p>
+        </div>
+
+        <div className="grid" style={{ marginTop: 14 }}>
+          <div className="card">
+            <h3>First Term</h3>
+            <div className="grid grid-2">
+              <label className="grid">
+                <span>Start date</span>
+                <input
+                  type="date"
+                  value={settings.firstTermStartDate}
+                  onChange={(e) =>
+                    updateTermDate("firstTermStartDate", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className="grid">
+                <span>End date</span>
+                <input
+                  type="date"
+                  value={settings.firstTermEndDate}
+                  onChange={(e) =>
+                    updateTermDate("firstTermEndDate", e.target.value)
+                  }
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Second Term</h3>
+            <div className="grid grid-2">
+              <label className="grid">
+                <span>Start date</span>
+                <input
+                  type="date"
+                  value={settings.secondTermStartDate}
+                  onChange={(e) =>
+                    updateTermDate("secondTermStartDate", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className="grid">
+                <span>End date</span>
+                <input
+                  type="date"
+                  value={settings.secondTermEndDate}
+                  onChange={(e) =>
+                    updateTermDate("secondTermEndDate", e.target.value)
+                  }
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>Third Term</h3>
+            <div className="grid grid-2">
+              <label className="grid">
+                <span>Start date</span>
+                <input
+                  type="date"
+                  value={settings.thirdTermStartDate}
+                  onChange={(e) =>
+                    updateTermDate("thirdTermStartDate", e.target.value)
+                  }
+                />
+              </label>
+
+              <label className="grid">
+                <span>End date</span>
+                <input
+                  type="date"
+                  value={settings.thirdTermEndDate}
+                  onChange={(e) =>
+                    updateTermDate("thirdTermEndDate", e.target.value)
+                  }
+                />
+              </label>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -224,11 +534,23 @@ export default function SettingsPage() {
         <h2>Report-card fields</h2>
         <div className="grid">
           {fields.map(([field, label]) => (
-            <label key={String(field)} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <label
+              key={String(field)}
+              style={{
+                display: "flex",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={Boolean(settings[field])}
-                onChange={e => setSettings(s => ({ ...s, [field]: e.target.checked }))}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    [field]: e.target.checked,
+                  }))
+                }
               />
               {label}
             </label>
@@ -236,16 +558,27 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section id="assessment-setup" className="card" style={{ marginTop: 18 }}>
+      <section
+        id="assessment-setup"
+        className="card"
+        style={{ marginTop: 18 }}
+      >
         <h2>Assessment setup</h2>
         <p className="muted">
-          Set the score boxes once for the whole school. Teachers only enter marks; they cannot change the maximums.
-          Enabled boxes must total exactly 100.
+          Set the score boxes once for the whole school. Teachers only
+          enter marks; they cannot change the maximums. Enabled boxes
+          must total exactly 100.
         </p>
 
-        <label className="grid" style={{ maxWidth: 320, marginBottom: 14 }}>
+        <label
+          className="grid"
+          style={{ maxWidth: 320, marginBottom: 14 }}
+        >
           <span>Term</span>
-          <select value={assessmentTerm} onChange={e => setAssessmentTerm(e.target.value)}>
+          <select
+            value={assessmentTerm}
+            onChange={(e) => setAssessmentTerm(e.target.value)}
+          >
             <option>First Term</option>
             <option>Second Term</option>
             <option>Third Term</option>
@@ -253,78 +586,129 @@ export default function SettingsPage() {
         </label>
 
         <div className="grid">
-          {(assessmentSetup[assessmentTerm]?.components ?? []).map((component, index) => (
-            <div className="grid grid-2" key={component.key} style={{ alignItems: "end" }}>
-              <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={component.enabled}
-                  disabled={component.key === "exam"}
-                  onChange={e => setAssessmentSetup(current => ({
-                    ...current,
-                    [assessmentTerm]: {
-                      components: current[assessmentTerm].components.map(item =>
-                        item.key === component.key ? { ...item, enabled: e.target.checked } : item
-                      ),
-                    },
-                  }))}
-                />
-                <span>{component.key === "exam" ? "Exam" : component.key.toUpperCase()}</span>
-              </label>
-
-              <div className="grid grid-2">
-                <input
-                  value={component.name}
-                  disabled={!component.enabled}
-                  onChange={e => setAssessmentSetup(current => ({
-                    ...current,
-                    [assessmentTerm]: {
-                      components: current[assessmentTerm].components.map(item =>
-                        item.key === component.key ? { ...item, name: e.target.value } : item
-                      ),
-                    },
-                  }))}
-                  placeholder={component.key === "exam" ? "Exam" : "e.g. Test 1"}
-                />
-                <label className="grid">
-                  <span>Maximum</span>
+          {(assessmentSetup[assessmentTerm]?.components ?? []).map(
+            (component) => (
+              <div
+                className="grid grid-2"
+                key={component.key}
+                style={{ alignItems: "end" }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                >
                   <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={component.maxScore}
-                    disabled={!component.enabled}
-                    onChange={e => setAssessmentSetup(current => ({
-                      ...current,
-                      [assessmentTerm]: {
-                        components: current[assessmentTerm].components.map(item =>
-                          item.key === component.key ? { ...item, maxScore: Number(e.target.value) } : item
-                        ),
-                      },
-                    }))}
+                    type="checkbox"
+                    checked={component.enabled}
+                    disabled={component.key === "exam"}
+                    onChange={(e) =>
+                      setAssessmentSetup((current) => ({
+                        ...current,
+                        [assessmentTerm]: {
+                          components: current[
+                            assessmentTerm
+                          ].components.map((item) =>
+                            item.key === component.key
+                              ? { ...item, enabled: e.target.checked }
+                              : item
+                          ),
+                        },
+                      }))
+                    }
                   />
+                  <span>
+                    {component.key === "exam"
+                      ? "Exam"
+                      : component.key.toUpperCase()}
+                  </span>
                 </label>
+
+                <div className="grid grid-2">
+                  <input
+                    value={component.name}
+                    disabled={!component.enabled}
+                    onChange={(e) =>
+                      setAssessmentSetup((current) => ({
+                        ...current,
+                        [assessmentTerm]: {
+                          components: current[
+                            assessmentTerm
+                          ].components.map((item) =>
+                            item.key === component.key
+                              ? { ...item, name: e.target.value }
+                              : item
+                          ),
+                        },
+                      }))
+                    }
+                    placeholder={
+                      component.key === "exam" ? "Exam" : "e.g. Test 1"
+                    }
+                  />
+
+                  <label className="grid">
+                    <span>Maximum</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={component.maxScore}
+                      disabled={!component.enabled}
+                      onChange={(e) =>
+                        setAssessmentSetup((current) => ({
+                          ...current,
+                          [assessmentTerm]: {
+                            components: current[
+                              assessmentTerm
+                            ].components.map((item) =>
+                              item.key === component.key
+                                ? {
+                                    ...item,
+                                    maxScore: Number(e.target.value),
+                                  }
+                                : item
+                            ),
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
 
         <div style={{ marginTop: 14 }}>
           <strong>
-            Total: {(assessmentSetup[assessmentTerm]?.components ?? [])
-              .filter(item => item.enabled)
-              .reduce((sum, item) => sum + Number(item.maxScore || 0), 0)}/100
+            Total:{" "}
+            {(assessmentSetup[assessmentTerm]?.components ?? [])
+              .filter((item) => item.enabled)
+              .reduce(
+                (sum, item) => sum + Number(item.maxScore || 0),
+                0
+              )}
+            /100
           </strong>
         </div>
+
         <p className="muted">
-          Example: CA1 /10 + CA2 /20 + CA3 /10 + Exam /60. You can enable or disable CA boxes as needed.
-          Once scores exist for a term, SkulGo locks that term's structure.
+          Example: CA1 /10 + CA2 /20 + CA3 /10 + Exam /60. You can
+          enable or disable CA boxes as needed. Once scores exist for a
+          term, SkulGo locks that term&apos;s structure.
         </p>
       </section>
 
       <section className="card" style={{ marginTop: 18 }}>
         <h2>Grading bands</h2>
-        <p className="muted">Default bands are ready. A school can adjust the minimum score and grade label.</p>
+        <p className="muted">
+          Default bands are ready. A school can adjust the minimum score
+          and grade label.
+        </p>
+
         <div className="grid">
           {bands.map((band, index) => (
             <div className="grid grid-2" key={index}>
@@ -333,12 +717,17 @@ export default function SettingsPage() {
                 min="0"
                 max="100"
                 value={band.min}
-                onChange={e => updateBand(index, "min", e.target.value)}
+                onChange={(e) =>
+                  updateBand(index, "min", e.target.value)
+                }
                 placeholder="Minimum score"
               />
+
               <input
                 value={band.grade}
-                onChange={e => updateBand(index, "grade", e.target.value)}
+                onChange={(e) =>
+                  updateBand(index, "grade", e.target.value)
+                }
                 placeholder="Grade"
               />
             </div>
@@ -348,24 +737,93 @@ export default function SettingsPage() {
 
       <section className="card" style={{ marginTop: 18 }}>
         <h2>Performance remarks</h2>
-        <p className="muted">Default remarks are provided by performance level. Edit and save them for this school.</p>
-        <div className="grid grid-2" style={{ marginBottom: 14 }}>
-          <label className="grid"><span>Teacher remark name</span><input value={settings.teacherRemarkLabel} onChange={e => setSettings(s => ({ ...s, teacherRemarkLabel: e.target.value }))} placeholder="e.g. Class Teacher Remark" /></label>
-          <label className="grid"><span>School authority remark name</span><input value={settings.principalRemarkLabel} onChange={e => setSettings(s => ({ ...s, principalRemarkLabel: e.target.value }))} placeholder="e.g. Principal Remark, Head Teacher Remark, Admin Remark" /></label>
+        <p className="muted">
+          Default remarks are provided by performance level. Edit and
+          save them for this school.
+        </p>
+
+        <div
+          className="grid grid-2"
+          style={{ marginBottom: 14 }}
+        >
+          <label className="grid">
+            <span>Teacher remark name</span>
+            <input
+              value={settings.teacherRemarkLabel}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  teacherRemarkLabel: e.target.value,
+                }))
+              }
+              placeholder="e.g. Class Teacher Remark"
+            />
+          </label>
+
+          <label className="grid">
+            <span>School authority remark name</span>
+            <input
+              value={settings.principalRemarkLabel}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  principalRemarkLabel: e.target.value,
+                }))
+              }
+              placeholder="e.g. Principal Remark, Head Teacher Remark, Admin Remark"
+            />
+          </label>
         </div>
+
         <div className="grid grid-2">
-          {["A", "B", "C", "D", "E", "F"].map(grade => (
+          {["A", "B", "C", "D", "E", "F"].map((grade) => (
             <label className="grid" key={grade}>
-              <span>Grade {grade} — {settings.teacherRemarkLabel || "Teacher remark"}</span>
-              <textarea rows={2} value={settings.teacherRemarks?.[grade] ?? ""} onChange={e => setSettings(s => ({ ...s, teacherRemarks: { ...s.teacherRemarks, [grade]: e.target.value } }))} />
-              <span>Grade {grade} — {settings.principalRemarkLabel || "School authority remark"}</span>
-              <textarea rows={2} value={settings.principalRemarks?.[grade] ?? ""} onChange={e => setSettings(s => ({ ...s, principalRemarks: { ...s.principalRemarks, [grade]: e.target.value } }))} />
+              <span>
+                Grade {grade} —{" "}
+                {settings.teacherRemarkLabel || "Teacher remark"}
+              </span>
+              <textarea
+                rows={2}
+                value={settings.teacherRemarks?.[grade] ?? ""}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    teacherRemarks: {
+                      ...s.teacherRemarks,
+                      [grade]: e.target.value,
+                    },
+                  }))
+                }
+              />
+
+              <span>
+                Grade {grade} —{" "}
+                {settings.principalRemarkLabel || "School authority remark"}
+              </span>
+              <textarea
+                rows={2}
+                value={settings.principalRemarks?.[grade] ?? ""}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    principalRemarks: {
+                      ...s.principalRemarks,
+                      [grade]: e.target.value,
+                    },
+                  }))
+                }
+              />
             </label>
           ))}
         </div>
       </section>
 
-      <button className="button" style={{ marginTop: 18 }} onClick={() => void save()} disabled={saving}>
+      <button
+        className="button"
+        style={{ marginTop: 18 }}
+        onClick={() => void save()}
+        disabled={saving}
+      >
         {saving ? "Saving..." : "Save Result Settings"}
       </button>
     </main>

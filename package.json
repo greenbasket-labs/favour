@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
@@ -20,17 +20,21 @@
     "telegram:setup": "node scripts/setup-validator-bot.js"
   },
   "dependencies": {
+    "@playwright/test": "^1.63.0",
     "@prisma/client": "^6.15.0",
-    "next": "^15.5.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "prisma": "^6.15.0",
-    "typescript": "^5.8.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@playwright/test": "^1.63.0",
-    "resend": "^6.0.0"
+    "next": "^15.5.0",
+    "prisma": "^6.15.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "resend": "^6.0.0",
+    "typescript": "^5.8.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.27"
+  }
 }

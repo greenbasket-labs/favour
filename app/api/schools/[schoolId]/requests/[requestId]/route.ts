@@ -82,6 +82,7 @@ export async function PATCH(
         await tx.teacher.create({
           data: {
             userId: schoolRequest.userId,
+            schoolId,
             teacherCode: makeTeacherId(school.abbr, new Date().getFullYear(), ids.map(x => x.teacherCode)),
             approved: true,
           },

@@ -77,7 +77,7 @@ export default async function PlanPage() {
           <Link href="/dashboard">Dashboard</Link><Link href="/applications">Applications</Link><Link href="/staff">Staff</Link>
           <Link href="/sections">Sections</Link><Link href="/classes">Classes</Link><Link href="/subjects">Subjects</Link>
           <Link href="/assign">Assign</Link><Link href="/fees">Fees</Link><Link href="/admin/attendance">Attendance</Link>
-          <Link href="/announcements">Announcements</Link><Link href="/support">Talk to SkulGo Support</Link>
+          <Link href="/announcements">Announcements</Link>
           <Link href="/settings">Result Settings</Link><Link href="/plan">Plan</Link><Link href="/account">My Account</Link>
         </nav>
         <div className="workspace-person"><strong>{user.name}</strong><span>ADMIN</span></div>

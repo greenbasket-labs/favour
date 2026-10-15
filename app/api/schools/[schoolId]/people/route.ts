@@ -191,6 +191,7 @@ export async function POST(
         await tx.teacher.create({
           data: {
             userId: user!.id,
+            schoolId,
             teacherCode: makeTeacherId(school.abbr, new Date().getFullYear(), ids.map(item => item.teacherCode)),
             approved: true,
           },

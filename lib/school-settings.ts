@@ -11,6 +11,12 @@ export type SchoolSettings = {
   firstTermLabel: string;
   secondTermLabel: string;
   thirdTermLabel: string;
+  firstTermStartDate?: string;
+  firstTermEndDate?: string;
+  secondTermStartDate?: string;
+  secondTermEndDate?: string;
+  thirdTermStartDate?: string;
+  thirdTermEndDate?: string;
   digitalResultEnabled: boolean;
   showPosition: boolean;
   showAttendance: boolean;

@@ -116,8 +116,8 @@ export default function SectionsPage() {
       <div className="workspace-header">
         <div>
           <p className="muted">Admin</p>
-          <h1>Sections</h1>
-          <p>Create the sections that exist in this school.</p>
+          <h1>School Sections</h1>
+          <p>Manage the sections available in this school.</p>
         </div>
       </div>
 
@@ -139,7 +139,7 @@ export default function SectionsPage() {
         <div className="workspace-card-header">
           <div>
             <h2>Add Section</h2>
-            <p>Choose a section and save it.</p>
+            <p>Select a section to add to your school.</p>
           </div>
         </div>
 
@@ -182,7 +182,7 @@ export default function SectionsPage() {
         <div className="workspace-card-header">
           <div>
             <h2>Saved Sections</h2>
-            <p>Only sections are shown here.</p>
+            <p>These are the sections currently available in your school.</p>
           </div>
         </div>
 
